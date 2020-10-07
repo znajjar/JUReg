@@ -3,10 +3,9 @@ import time
 from collections import Iterable
 
 from PIL import Image
+from PIL import ImageFilter
 from io import BytesIO
 import pytesseract
-import numpy as np
-import cv2
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -205,6 +204,7 @@ class JUReg:
             except NoSuchElementException:
                 # if captcha isn't found then it's already logged in
                 return
+
             captcha_img = Image.open(BytesIO(captcha))
             captchaText = self._ocr(captcha_img)
 
@@ -229,19 +229,20 @@ class JUReg:
         button.click()
 
     @staticmethod
-    def _rotate_image(image, angle):
-        image_center = tuple(np.array(image.shape[1::-1]) / 2 - np.array(image.shape[1::-1]) * 0.4)
-        rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.6)
-        result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
-        return result
-
-    def _get_captcha(self, captcha_img):
-        captcha_img = captcha_img.convert('RGB')
-        captcha_img = np.array(captcha_img)
-        captcha_img = self._rotate_image(captcha_img, 10)
+    def _get_captcha(captcha_img):
+        # Transforming image
+        captcha_img = captcha_img.rotate(11, Image.BICUBIC)
+        captcha_img = captcha_img.crop((2, 15, captcha_img.size[0] - 25, captcha_img.size[1] - 5))
+        captcha_img = captcha_img.resize((captcha_img.size[0] * 2, captcha_img.size[1] * 2))
+        # Applying filters (MedianFilter removes noise)
+        captcha_img = captcha_img.filter(ImageFilter.EDGE_ENHANCE)
+        captcha_img = captcha_img.filter(ImageFilter.MedianFilter)
+        captcha_img = captcha_img.filter(ImageFilter.MedianFilter)
+        captcha_img = captcha_img.filter(ImageFilter.SMOOTH_MORE)
 
         custom_config = r'--oem 3 --psm 7 min_characters_to_try 5' \
                         r'load_system_dawg false' \
                         r'load_freq_dawg false' \
                         r'tessedit_char_whitelist abcdefghijklmnopqrstuvwxyz0123456789'
+
         return pytesseract.image_to_string(captcha_img, config=custom_config).splitlines()[0]
