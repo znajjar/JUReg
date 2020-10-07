@@ -4,4 +4,4 @@ class JURegBaseException(Exception):
 
 class CredentialsNotProvided(JURegBaseException):
     def __str__(self):
-        return 'Credentials have to be provided to the constructor.'
+        return 'Credentials have to be provided first.'
