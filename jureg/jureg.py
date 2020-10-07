@@ -1,10 +1,13 @@
 import threading
 import time
 from collections import Iterable
+from io import BytesIO
+
+from .errors import CredentialsNotProvided
+from .data import Data
 
 from PIL import Image
 from PIL import ImageFilter
-from io import BytesIO
 import pytesseract
 
 from selenium import webdriver
@@ -14,9 +17,6 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException,
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.select import Select
-
-from jureg.errors import CredentialsNotProvided
-from jureg.data import Data
 
 
 class JUReg:
@@ -32,10 +32,10 @@ class JUReg:
     filepath: :class:`str`
         Alternatively sign-in credentials can be provided in a file as demonstrated in the example.
     target: :class:`Callable`
-        Callback function after checking courses is finished. Expects a map of open courses found with
+        Callback function after checking courses is finished. Expects a dictionary of open courses found with
         the course ID as the key and a list of open sections of that course as the value.
     ocr: :class:`Callable`
-        This gives the option to provide an alternative OCR function. The built-in function is 65% accurate
+        This gives the option to provide an alternative OCR function. The built-in function is 70% accurate
         but better results could be achieved. Expects a PIL Image and returns a str of the captcha word.
     headless: :class:`bool`
         This gives the option to make the webdriver headless. If set to True the constructor won't launch the webdriver
