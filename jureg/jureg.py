@@ -108,14 +108,14 @@ class JUReg:
         course = dep[courseID]
 
         if isinstance(sections, Iterable):
-            for sec in sections: course.add(sec)
+            for sec in sections: course.add(int(sec))
         elif isinstance(sections, int):
             course.add(sections)
         elif isinstance(sections, str):
             sections = sections.split()
             for sec in sections: course.add(int(sec))
         else:
-            raise
+            raise TypeError
 
     def run(self):
         # Starts a new thread so it doesn't block the flow of the program.
