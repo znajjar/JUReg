@@ -19,7 +19,7 @@ You need to download [tesseract](https://github.com/tesseract-ocr/tesseract) and
 If you're on another OS you'll have to fix the directory in the source code.
 
 * `selenium` - pip install selenium  
-You also have to download [geckodriver](https://github.com/mozilla/geckodriver/releases) and put it in PATH.
+You also have to download [geckodriver](https://github.com/mozilla/geckodriver/releases) and put it in PATH or just place it in the same directory as your code.
 
 Usage
 ===
