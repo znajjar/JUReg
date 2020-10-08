@@ -1,16 +1,16 @@
 JUReg
 ===
 
-A web scrapper for the [registeration website](https://regweb1.ju.edu.jo:4443/selfregapp/home.xhtml) of the University of Jordan.
+A web scrapper for the [registration website](https://regweb1.ju.edu.jo:4443/selfregapp/home.xhtml) of the University of Jordan.
 
 ![reg_site_image](https://user-images.githubusercontent.com/42502239/95434861-73d55700-095a-11eb-9445-cf83c6ebbd55.png)
 
-This library accesses the registerion website and looks for courses you want to register in and tells you if any of them is open saving you a lot of time and effort.
+This library accesses the registration website and looks for courses you want to register in and tells you if any of them is open saving you a lot of time and effort.
 
 Installation
 ===
 Place the jureg folder in under (..\Python\Lib\site-packages). This will install the library system-wide.  
-Alternativaley, you can just place it in the same directory as your python script.
+Alternatively, you can just place it in the same directory as your python script.
 
 ### Dependencies: 
 * `PIL` - pip install Pillow
