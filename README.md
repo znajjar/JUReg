@@ -1,7 +1,7 @@
 JUReg
 ===
 
-A web scrapper for the [registration website](https://regweb1.ju.edu.jo:4443/selfregapp/home.xhtml) of the University of Jordan.
+A web scraper for the [registration website](https://regweb1.ju.edu.jo:4443/selfregapp/home.xhtml) of the University of Jordan.
 
 ![reg_site_image](https://user-images.githubusercontent.com/42502239/95434861-73d55700-095a-11eb-9445-cf83c6ebbd55.png)
 
