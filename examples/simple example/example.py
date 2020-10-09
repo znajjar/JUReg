@@ -9,7 +9,6 @@ def target_function(courses):
             if sec != len(courses[course]) - 1:
                 out += ','
         print(out)
-    pass
 
 
 ju = JUReg(filepath='login.txt', target=target_function)

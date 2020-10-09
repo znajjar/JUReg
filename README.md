@@ -15,11 +15,14 @@ Alternatively, you can just place it in the same directory as your python script
 ### Dependencies: 
 * `PIL` - pip install Pillow
 * `pytesseract` - pip install pytesseract  
-You need to download [tesseract](https://github.com/tesseract-ocr/tesseract) and place it under (C:\Program Files\) on windows.  
-If you're on another OS you'll have to fix the directory in the source code.
+After installing the library, you need to download [tesseract](https://github.com/tesseract-ocr/tesseract).  
+If you are on windows you have to install it in `C:\Program Files\Tesseract-OCR\ `.  
 
 * `selenium` - pip install selenium  
-You also have to download [geckodriver](https://github.com/mozilla/geckodriver/releases) and put it in PATH or just place it in the same directory as your code.
+You also need to download the WebDriver for your choice of browser and put it in 
+PATH or just place it in the same directory as your code.  
+Firefox(recommended): [geckodriver](https://github.com/mozilla/geckodriver/releases)  
+Chrome: [ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/downloads)
 
 Usage
 ===
@@ -36,6 +39,8 @@ Parameters:
         GUI and everything will be ran in the background.
 * `refresh`: How often you want the watched courses to be checked in minutes. If set to -1 it will only
         perform a single check.  
+* `driver`: The browser you want to use. 'ff' for Firefox, 'ch' for Chrome. Note that you need to download the WebDriver
+        for your browser as explained in the installation section.
 
 **add_sections()**  
 Parameters:

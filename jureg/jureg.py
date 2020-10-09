@@ -1,9 +1,11 @@
+from datetime import datetime
+import platform
 import threading
 import time
 from collections import Iterable
 from io import BytesIO
 
-from .errors import CredentialsNotProvided
+from .errors import *
 from .data import Data
 
 from PIL import Image
@@ -43,11 +45,19 @@ class JUReg:
     refresh: :class:`int`
         How often you want the watched courses to be checked in minutes. If set to -1 it will only
         perform a single check.
+    driver: :class:`str`
+        The browser you want to use. 'ff' for Firefox, 'ch' for Chrome.
     """
+    tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
     _reg_url = 'https://regweb1.ju.edu.jo:4443/selfregapp/home.xhtml'
     _schedule_url = 'https://regweb1.ju.edu.jo:4443/selfregapp/secured/ofrd-course.xhtml'
+    _DELAY = 0.05
+    _ATTEMPTS = 5
+    _DELAY_FACTOR = 1.5
+    _DELAY_MIN = 0
 
-    def __init__(self, username=None, password=None, filepath=None, target=None, ocr=None, headless=False, refresh=5):
+    def __init__(self, username=None, password=None, filepath=None, target=None, ocr=None,
+                 headless=False, refresh=5, driver='ff'):
         self._username = None
         self._password = None
         if username is not None and password is not None:
@@ -59,11 +69,16 @@ class JUReg:
                 self._password = credentials.readline()
 
         self.target = target
-        options = Options()
+        options = Options() if driver == 'ff' else webdriver.ChromeOptions()
         if headless: options.add_argument("--headless")
-        self._driver = webdriver.Firefox(options=options)
-        self._driver.get(self._reg_url)
-
+        if driver == 'ff':
+            self._driver = webdriver.Firefox(options=options)
+        elif driver == 'ch':
+            self._DELAY_MIN = 0.5
+            self._driver = webdriver.Chrome(options=options)
+        else:
+            raise WrongDriverArgument
+        self._get(self._reg_url)
         self._ocr = ocr
         if self._ocr is None: self._ocr = self._get_captcha
 
@@ -73,7 +88,8 @@ class JUReg:
         self._found = {}
         self._running = False
         self._running_thread = None
-        pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
+        if platform.system() == 'Windows':
+            pytesseract.pytesseract.tesseract_cmd = self.tesseract_cmd
 
     def set_username(self, username):
         if not isinstance(username, str):
@@ -119,7 +135,7 @@ class JUReg:
 
     def run(self):
         # Starts a new thread so it doesn't block the flow of the program.
-        self._running_thread = threading.Thread(target=self._run())
+        self._running_thread = threading.Thread(target=self._run)
         self._running_thread.start()
 
     def check_watching(self):
@@ -127,18 +143,20 @@ class JUReg:
         # calling this function will block your program until it finishes checking
         self._login()
         self._found = {}
-        self._driver.get(self._schedule_url)
+        self._get(self._schedule_url)
 
         degrees = self._driver.find_element_by_class_name('selectonemenu')
         degrees = Select(degrees)
         degrees.select_by_index(1)
 
+        time.sleep(self._DELAY)
         facultySelector = Select(self._driver.find_elements_by_class_name('selectonemenu')[1])
 
         for fac in self._watching:
             facIdx, depsIDs = self._faculties[fac]
             facultySelector.select_by_index(facIdx)
 
+            time.sleep(self._DELAY)
             depsSelector = Select(self._driver.find_elements_by_class_name('selectonemenu')[2])
 
             for dep in self._watching[fac]:
@@ -146,7 +164,7 @@ class JUReg:
                 depsSelector.select_by_index(depIdx)
 
                 try:
-                    pages = WebDriverWait(self._driver, timeout=1).until(
+                    pages = WebDriverWait(self._driver, timeout=self._DELAY * 2).until(
                         expected_conditions.presence_of_element_located((By.CLASS_NAME, 'ui-paginator-top')))
                 except TimeoutException:
                     pages = None
@@ -159,21 +177,32 @@ class JUReg:
                         pages = self._driver.find_element_by_class_name('ui-paginator-top')
                         pages.find_elements_by_class_name('ui-paginator-page')[pageIdx].click()
                         self._find_sections(fac + dep, self._watching[fac][dep])
-        self._driver.get(self._reg_url)
+        self._get(self._reg_url)
         return self._found
+
+    def _get(self, url):
+        current_time = datetime.now()
+        self._driver.get(url)
+        self._DELAY = min((datetime.now() - current_time).total_seconds() * self._DELAY_FACTOR + self._DELAY_MIN, 10)
 
     def _run(self):
         while True:
             while self._running: pass
             self._running = True
-            while True:
+            for attempt in range(1, self._ATTEMPTS + 1):
                 try:
                     self.check_watching()
                     break
-                except StaleElementReferenceException:
-                    print('StaleElementReferenceException')
-                except NoSuchElementException:
-                    print('NoSuchElementException')
+                except StaleElementReferenceException as e:
+                    if attempt == self._ATTEMPTS + 1: raise e
+                    print(e)
+                except NoSuchElementException as e:
+                    if attempt == self._ATTEMPTS + 1: raise e
+                    print(e)
+                finally:
+                    self._DELAY_FACTOR += 0.5
+            else:
+                raise CouldNotFinishOperation
 
             self.target(self._found)
             if self._refresh == -1: break
@@ -182,6 +211,7 @@ class JUReg:
         self._running = False
 
     def _find_sections(self, departmentID, courses):
+        time.sleep(self._DELAY)
         for course in courses:
             courseID = departmentID + course
             sections = courses[course]
@@ -197,7 +227,7 @@ class JUReg:
         # keeps trying until it gets the captcha correct
         while True:
             self._checkEng()
-            self._driver.get(self._reg_url)
+            self._get(self._reg_url)
 
             try:
                 captcha = self._driver.find_element_by_id('loginform:imgCaptchaId').screenshot_as_png
@@ -208,14 +238,12 @@ class JUReg:
             captcha_img = Image.open(BytesIO(captcha))
             captchaText = self._ocr(captcha_img)
 
-            inputElements = self._driver.find_elements_by_class_name('ui-inputfield')
-
             if self._username is None or self._password is None:
                 raise CredentialsNotProvided
 
-            inputElements[0].send_keys(self._username)
-            inputElements[1].send_keys(self._password)
-            inputElements[2].send_keys(captchaText)
+            self._driver.find_elements_by_class_name('ui-inputfield')[0].send_keys(self._username)
+            self._driver.find_elements_by_class_name('ui-inputfield')[1].send_keys(self._password)
+            self._driver.find_elements_by_class_name('ui-inputfield')[2].send_keys(captchaText)
 
             self._driver.find_elements_by_class_name('ui-button')[0].click()
 
